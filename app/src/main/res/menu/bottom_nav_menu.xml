@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/dashboardFragment"
+        android:icon="@android:drawable/ic_menu_compass"
+        android:title="Dashboard" />
+    <item
+        android:id="@+id/transactionListFragment"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:title="Transactions" />
+    <item
+        android:id="@+id/budgetListFragment"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="Budgets" />
+    <item
+        android:id="@+id/categoryListFragment"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="Catégories" />
+    <item
+        android:id="@+id/settingsFragment"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="Paramètres" />
+</menu>

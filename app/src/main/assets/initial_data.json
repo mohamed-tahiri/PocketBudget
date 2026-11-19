@@ -1,0 +1,43 @@
+{
+  "categories": [
+    { "id": 1, "name": "Alimentation", "type": "EXPENSE", "iconName": "ic_shopping_cart", "colorHex": "#E53935" },
+    { "id": 2, "name": "Transport", "type": "EXPENSE", "iconName": "ic_directions_car", "colorHex": "#FB8C00" },
+    { "id": 3, "name": "Logement", "type": "EXPENSE", "iconName": "ic_home", "colorHex": "#8E24AA" },
+    { "id": 4, "name": "Loisirs", "type": "EXPENSE", "iconName": "ic_sports_esports", "colorHex": "#039BE5" },
+    { "id": 5, "name": "Salaire", "type": "INCOME", "iconName": "ic_work", "colorHex": "#43A047" },
+    { "id": 6, "name": "Freelance", "type": "INCOME", "iconName": "ic_laptop", "colorHex": "#00ACC1" }
+  ],
+  "budgets": [
+    { "id": 1, "categoryId": 1, "monthlyLimit": 500.0, "monthYear": "2025-05" },
+    { "id": 2, "categoryId": 2, "monthlyLimit": 150.0, "monthYear": "2025-05" },
+    { "id": 3, "categoryId": 3, "monthlyLimit": 900.0, "monthYear": "2025-05" },
+    { "id": 4, "categoryId": 4, "monthlyLimit": 200.0, "monthYear": "2025-05" }
+  ],
+  "transactions": [
+    { "id": 1, "title": "Salaire de mai", "amount": 2500.0, "type": "INCOME", "categoryId": 5, "date": 1746096000000 },
+    { "id": 2, "title": "Mission freelance web", "amount": 650.0, "type": "INCOME", "categoryId": 6, "date": 1746182400000 },
+    { "id": 3, "title": "Courses Supermarché", "amount": 85.5, "type": "EXPENSE", "categoryId": 1, "date": 1746268800000 },
+    { "id": 4, "title": "Essence voiture", "amount": 60.0, "type": "EXPENSE", "categoryId": 2, "date": 1746355200000 },
+    { "id": 5, "title": "Loyer appartement", "amount": 850.0, "type": "EXPENSE", "categoryId": 3, "date": 1746441600000 },
+    { "id": 6, "title": "Resto entre amis", "amount": 45.0, "type": "EXPENSE", "categoryId": 4, "date": 1746528000000 },
+    { "id": 7, "title": "Boulangerie", "amount": 12.0, "type": "EXPENSE", "categoryId": 1, "date": 1746614400000 },
+    { "id": 8, "title": "Abonnement Metro", "amount": 75.0, "type": "EXPENSE", "categoryId": 2, "date": 1746700800000 },
+    { "id": 9, "title": "Cinema & Popcorn", "amount": 25.0, "type": "EXPENSE", "categoryId": 4, "date": 1746787200000 },
+    { "id": 10, "title": "Marché bio", "amount": 54.2, "type": "EXPENSE", "categoryId": 1, "date": 1746873600000 },
+    { "id": 11, "title": "Facture électricité", "amount": 65.0, "type": "EXPENSE", "categoryId": 3, "date": 1746960000000 },
+    { "id": 12, "title": "Vente objet occasion", "amount": 80.0, "type": "INCOME", "categoryId": 6, "date": 1747046400000 },
+    { "id": 13, "title": "Supermarché Bio", "amount": 92.4, "type": "EXPENSE", "categoryId": 1, "date": 1747132800000 },
+    { "id": 14, "title": "Parking centre-ville", "amount": 15.0, "type": "EXPENSE", "categoryId": 2, "date": 1747219200000 },
+    { "id": 15, "title": "Jeu vidéo Steam", "amount": 39.99, "type": "EXPENSE", "categoryId": 4, "date": 1747305600000 },
+    { "id": 16, "title": "Boucherie", "amount": 35.0, "type": "EXPENSE", "categoryId": 1, "date": 1747392000000 },
+    { "id": 17, "title": "Consulting app", "amount": 400.0, "type": "INCOME", "categoryId": 6, "date": 1747478400000 },
+    { "id": 18, "title": "Pharmacie", "amount": 22.5, "type": "EXPENSE", "categoryId": 1, "date": 1747564800000 },
+    { "id": 19, "title": "Concert rock", "amount": 55.0, "type": "EXPENSE", "categoryId": 4, "date": 1747651200000 },
+    { "id": 20, "title": "Péage autoroute", "amount": 28.0, "type": "EXPENSE", "categoryId": 2, "date": 1747737600000 },
+    { "id": 21, "title": "Internet Fibre", "amount": 38.0, "type": "EXPENSE", "categoryId": 3, "date": 1747824000000 },
+    { "id": 22, "title": "Légumes du producteur", "amount": 28.5, "type": "EXPENSE", "categoryId": 1, "date": 1747910400000 },
+    { "id": 23, "title": "Livre de programmation", "amount": 42.0, "type": "EXPENSE", "categoryId": 4, "date": 1747996800000 },
+    { "id": 24, "title": "Remboursement ami", "amount": 50.0, "type": "INCOME", "categoryId": 5, "date": 1748083200000 },
+    { "id": 25, "title": "Supermarché Casino", "amount": 110.3, "type": "EXPENSE", "categoryId": 1, "date": 1748169600000 }
+  ]
+}

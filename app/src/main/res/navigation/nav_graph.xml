@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.example.pocketbudget.ui.dashboard.DashboardFragment"
+        android:label="Dashboard">
+        <action
+            android:id="@+id/action_dashboardFragment_to_addEditTransactionFragment"
+            app:destination="@id/addEditTransactionFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/transactionListFragment"
+        android:name="com.example.pocketbudget.ui.transactions.TransactionListFragment"
+        android:label="Transactions">
+        <action
+            android:id="@+id/action_transactionListFragment_to_addEditTransactionFragment"
+            app:destination="@id/addEditTransactionFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addEditTransactionFragment"
+        android:name="com.example.pocketbudget.ui.transaction.AddEditTransactionFragment"
+        android:label="Add/Edit Transaction">
+        <argument
+            android:name="transactionId"
+            app:argType="long"
+            android:defaultValue="0L" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/budgetListFragment"
+        android:name="com.example.pocketbudget.ui.budgets.BudgetListFragment"
+        android:label="Budgets" />
+
+    <fragment
+        android:id="@+id/categoryListFragment"
+        android:name="com.example.pocketbudget.ui.categories.CategoryListFragment"
+        android:label="Categories" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.pocketbudget.ui.settings.SettingsFragment"
+        android:label="Settings" />
+
+</navigation>
