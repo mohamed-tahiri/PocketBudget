@@ -49,7 +49,8 @@ class AddEditTransactionViewModel(application: Application) : AndroidViewModel(a
             return
         }
 
-        val validAmount = amount!!
+        val validAmount = amount
+            ?: return onError(check.errorMessage ?: "Montant invalide")
         viewModelScope.launch {
             if (id == 0L) {
                 val newTx = TransactionEntity(
@@ -57,7 +58,7 @@ class AddEditTransactionViewModel(application: Application) : AndroidViewModel(a
                     amount = validAmount,
                     type = type,
                     categoryId = categoryId,
-                    date = date
+                    date = existing.date
                 )
                 val insertedId = transactionRepository.insertTransaction(newTx)
                 Log.d(TAG, "Inserted transaction id=$insertedId, amount=$validAmount, categoryId=$categoryId")

@@ -24,7 +24,7 @@ object InputValidator {
         if (title.isBlank()) {
             return ValidationResult(false, "Le titre ne peut pas être vide")
         }
-        if (amount == null || amount.isNaN() || amount <= 0.0) {
+        if (amount == null || !amount.isFinite() || amount <= 0.0) {
             return ValidationResult(false, "Le montant doit être supérieur à 0")
         }
         if (type !in VALID_TYPES) {
@@ -61,7 +61,7 @@ object InputValidator {
         if (categoryId <= 0L) {
             return ValidationResult(false, "Veuillez sélectionner une catégorie")
         }
-        if (monthlyLimit == null || monthlyLimit.isNaN() || monthlyLimit <= 0.0) {
+        if (monthlyLimit == null || !monthlyLimit.isFinite() || monthlyLimit <= 0.0) {
             return ValidationResult(false, "La limite mensuelle doit être supérieure à 0")
         }
         if (!MONTH_YEAR_REGEX.matches(monthYear.trim())) {

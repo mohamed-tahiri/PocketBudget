@@ -97,7 +97,7 @@ class AddEditTransactionFragment : Fragment(R.layout.fragment_add_edit_transacti
                 onError = { errorMsg ->
                     when {
                         title.isBlank() -> binding.tilTitle.error = errorMsg
-                        amount == null || amount <= 0.0 -> binding.tilAmount.error = errorMsg
+                        amount == null || !amount.isFinite() || amount <= 0.0 -> binding.tilAmount.error = errorMsg
                         else -> Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
                     }
                 }

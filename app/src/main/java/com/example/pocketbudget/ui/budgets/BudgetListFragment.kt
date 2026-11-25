@@ -17,6 +17,7 @@ import com.example.pocketbudget.R
 import com.example.pocketbudget.data.local.entity.CategoryEntity
 import com.example.pocketbudget.databinding.FragmentBudgetListBinding
 import com.example.pocketbudget.util.InputValidator
+import com.example.pocketbudget.util.AppConstants
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -114,12 +115,18 @@ class BudgetListFragment : Fragment(R.layout.fragment_budget_list) {
                 val limit = etLimit.text.toString().toDoubleOrNull()
                 val selectedPos = spinnerCategory.selectedItemPosition
                 val catId = if (selectedPos in categories.indices) categories[selectedPos].id else -1L
-                val check = InputValidator.validateBudget(catId, limit, "2025-05")
+                val check = InputValidator.validateBudget(
+                    catId,
+                    limit,
+                    AppConstants.DEFAULT_BUDGET_MONTH
+                )
                 if (!check.isValid) {
                     tilLimit.error = check.errorMessage
                 } else {
                     tilLimit.error = null
-                    viewModel.saveBudget(catId, limit!!)
+                    limit?.let { validLimit ->
+                        viewModel.saveBudget(catId, validLimit)
+                    }
                     dialog.dismiss()
                 }
             }

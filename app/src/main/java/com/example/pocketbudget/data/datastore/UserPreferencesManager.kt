@@ -44,17 +44,19 @@ class UserPreferencesManager(private val context: Context) {
 
     val currencyFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.CURRENCY] ?: "€"
+            preferences[PreferencesKeys.CURRENCY]?.takeIf { it in SUPPORTED_CURRENCIES } ?: "€"
         }
 
     val budgetAlertThresholdFlow: Flow<Int> = context.dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.BUDGET_ALERT_THRESHOLD] ?: 80
+            (preferences[PreferencesKeys.BUDGET_ALERT_THRESHOLD] ?: 80)
+                .coerceIn(MIN_ALERT_THRESHOLD, MAX_ALERT_THRESHOLD)
+                .let { threshold -> threshold.takeIf { it in SUPPORTED_ALERT_THRESHOLDS } ?: 80 }
         }
 
     val themeModeFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.THEME_MODE] ?: "SYSTEM"
+            preferences[PreferencesKeys.THEME_MODE]?.takeIf { it in SUPPORTED_THEME_MODES } ?: "SYSTEM"
         }
 
     val userNameFlow: Flow<String> = context.dataStore.data
@@ -68,23 +70,26 @@ class UserPreferencesManager(private val context: Context) {
         }
 
     suspend fun updateCurrency(currency: String) {
-        Log.d(TAG, "updateCurrency: $currency")
+        val normalizedCurrency = currency.takeIf { it in SUPPORTED_CURRENCIES } ?: "€"
+        Log.d(TAG, "updateCurrency: $normalizedCurrency")
         context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.CURRENCY] = currency
+            preferences[PreferencesKeys.CURRENCY] = normalizedCurrency
         }
     }
 
     suspend fun updateBudgetAlertThreshold(threshold: Int) {
-        Log.d(TAG, "updateBudgetAlertThreshold: $threshold")
+        val normalizedThreshold = threshold.takeIf { it in SUPPORTED_ALERT_THRESHOLDS } ?: 80
+        Log.d(TAG, "updateBudgetAlertThreshold: $normalizedThreshold")
         context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.BUDGET_ALERT_THRESHOLD] = threshold
+            preferences[PreferencesKeys.BUDGET_ALERT_THRESHOLD] = normalizedThreshold
         }
     }
 
     suspend fun updateThemeMode(themeMode: String) {
-        Log.d(TAG, "updateThemeMode: $themeMode")
+        val normalizedThemeMode = themeMode.takeIf { it in SUPPORTED_THEME_MODES } ?: "SYSTEM"
+        Log.d(TAG, "updateThemeMode: $normalizedThemeMode")
         context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.THEME_MODE] = themeMode
+            preferences[PreferencesKeys.THEME_MODE] = normalizedThemeMode
         }
     }
 
@@ -104,5 +109,10 @@ class UserPreferencesManager(private val context: Context) {
 
     companion object {
         private const val TAG = "UserPreferencesManager"
+        private val SUPPORTED_CURRENCIES = setOf("€", "$", "£", "CHF")
+        private val SUPPORTED_ALERT_THRESHOLDS = setOf(80, 90, 100)
+        private val SUPPORTED_THEME_MODES = setOf("SYSTEM", "LIGHT", "DARK")
+        private const val MIN_ALERT_THRESHOLD = 0
+        private const val MAX_ALERT_THRESHOLD = 100
     }
 }

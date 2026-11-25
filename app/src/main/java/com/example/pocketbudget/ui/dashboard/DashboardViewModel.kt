@@ -8,6 +8,8 @@ import com.example.pocketbudget.data.local.PocketBudgetDatabase
 import com.example.pocketbudget.data.local.relation.BudgetWithCategoryAndSpent
 import com.example.pocketbudget.data.repository.BudgetRepository
 import com.example.pocketbudget.data.repository.TransactionRepository
+import com.example.pocketbudget.util.BudgetAlertCalculator
+import com.example.pocketbudget.util.AppConstants
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -42,7 +44,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         combine(
             preferencesManager.userNameFlow,
             preferencesManager.userEmailFlow,
-            budgetRepository.getBudgetsWithSpentForMonth("2025-05")
+            budgetRepository.getBudgetsWithSpentForMonth(AppConstants.DEFAULT_BUDGET_MONTH)
         ) { name, email, budgets ->
             Triple(name, email, budgets)
         }
@@ -60,11 +62,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val totalExp = expense ?: 0.0
         val balance = totalInc - totalExp
 
-        val warningList = budgets.filter { b ->
-            if (b.budget.monthlyLimit > 0) {
-                val pct = (b.spentAmount / b.budget.monthlyLimit) * 100
-                pct >= threshold
-            } else false
+        val warningList = budgets.filter { budget ->
+            BudgetAlertCalculator.calculate(
+                budget.spentAmount,
+                budget.budget.monthlyLimit,
+                threshold
+            ).isWarning
         }
 
         DashboardUiState(

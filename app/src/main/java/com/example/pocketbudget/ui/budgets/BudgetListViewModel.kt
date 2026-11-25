@@ -11,6 +11,7 @@ import com.example.pocketbudget.data.local.relation.BudgetWithCategoryAndSpent
 import com.example.pocketbudget.data.repository.BudgetRepository
 import com.example.pocketbudget.data.repository.CategoryRepository
 import com.example.pocketbudget.util.InputValidator
+import com.example.pocketbudget.util.AppConstants
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,7 +32,7 @@ class BudgetListViewModel(application: Application) : AndroidViewModel(applicati
     private val preferencesManager = UserPreferencesManager(application)
 
     val uiState: StateFlow<BudgetListUiState> = combine(
-        budgetRepository.getBudgetsWithSpentForMonth("2025-05"),
+        budgetRepository.getBudgetsWithSpentForMonth(AppConstants.DEFAULT_BUDGET_MONTH),
         categoryRepository.getCategoriesByType("EXPENSE"),
         preferencesManager.currencyFlow,
         preferencesManager.budgetAlertThresholdFlow
@@ -48,7 +49,11 @@ class BudgetListViewModel(application: Application) : AndroidViewModel(applicati
         initialValue = BudgetListUiState()
     )
 
-    fun saveBudget(categoryId: Long, monthlyLimit: Double, monthYear: String = "2025-05") {
+    fun saveBudget(
+        categoryId: Long,
+        monthlyLimit: Double,
+        monthYear: String = AppConstants.DEFAULT_BUDGET_MONTH
+    ) {
         val check = InputValidator.validateBudget(categoryId, monthlyLimit, monthYear)
         if (!check.isValid) return
 
