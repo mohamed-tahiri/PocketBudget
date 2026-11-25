@@ -50,7 +50,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.navHostFragment) as NavHostFragment
+            .findFragmentById(R.id.navHostFragment) as? NavHostFragment
+        if (navHostFragment == null) {
+            Log.e(TAG, "Navigation host fragment was not found")
+            return
+        }
         val navController = navHostFragment.navController
         binding.bottomNavigationView.setupWithNavController(navController)
     }

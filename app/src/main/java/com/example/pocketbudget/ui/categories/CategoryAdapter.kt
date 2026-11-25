@@ -39,7 +39,7 @@ class CategoryAdapter(
             binding.tvCategoryType.text = if (item.type == "INCOME") "Revenu" else "Dépense"
             try {
                 binding.viewColorIndicator.setBackgroundColor(Color.parseColor(item.colorHex))
-            } catch (e: Exception) {
+            } catch (_: IllegalArgumentException) {
                 binding.viewColorIndicator.setBackgroundColor(Color.GRAY)
             }
 
