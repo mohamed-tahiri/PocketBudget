@@ -48,6 +48,9 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransactions(transactions: List<TransactionEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTransactionsIfAbsent(transactions: List<TransactionEntity>)
+
     @Update
     suspend fun updateTransaction(transaction: TransactionEntity)
 
@@ -63,6 +66,14 @@ interface TransactionDao {
     @Query("SELECT SUM(amount) FROM transactions WHERE categoryId = :categoryId AND type = 'EXPENSE'")
     suspend fun getTotalSpentForCategory(categoryId: Long): Double?
 
+    @Query("SELECT categoryId, COALESCE(SUM(amount), 0.0) AS totalSpent FROM transactions WHERE type = 'EXPENSE' GROUP BY categoryId")
+    fun getCategoryExpenseTotalsFlow(): Flow<List<CategorySpentTotal>>
+
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun getTransactionCount(): Int
 }
+
+data class CategorySpentTotal(
+    val categoryId: Long,
+    val totalSpent: Double
+)

@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.pocketbudget.R
 import com.example.pocketbudget.data.local.entity.CategoryEntity
@@ -31,28 +32,61 @@ class TransactionListFragment : Fragment(R.layout.fragment_transaction_list) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentTransactionListBinding.bind(view)
 
+        transactionAdapter = TransactionAdapter(
+            currency = viewModel.currency.value,
+            onItemClick = { txWithCat ->
+                val bundle = bundleOf("transactionId" to txWithCat.transaction.id)
+                findNavController().navigate(R.id.action_transactionListFragment_to_addEditTransactionFragment, bundle)
+            },
+            onDeleteClick = { txWithCat ->
+                viewModel.deleteTransaction(txWithCat.transaction)
+            }
+        )
+        binding.rvTransactions.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvTransactions.adapter = transactionAdapter
+
+        transactionAdapter.addLoadStateListener { loadStates ->
+            if (_binding == null) return@addLoadStateListener
+            val refreshState = loadStates.refresh
+            when {
+                refreshState is LoadState.Error -> {
+                    binding.layoutError.visibility = View.VISIBLE
+                    binding.tvEmptyTransactions.visibility = View.GONE
+                    binding.rvTransactions.visibility = View.GONE
+                }
+                refreshState is LoadState.NotLoading && transactionAdapter.itemCount == 0 -> {
+                    binding.layoutError.visibility = View.GONE
+                    binding.tvEmptyTransactions.visibility = View.VISIBLE
+                    binding.rvTransactions.visibility = View.GONE
+                }
+                else -> {
+                    binding.layoutError.visibility = View.GONE
+                    binding.tvEmptyTransactions.visibility = View.GONE
+                    binding.rvTransactions.visibility = View.VISIBLE
+                }
+            }
+        }
+
+        binding.btnRetryTransactions.setOnClickListener {
+            transactionAdapter.retry()
+        }
+
         setupSpinners()
+
+        if (binding.etSearch.text.toString() != viewModel.searchQuery.value) {
+            binding.etSearch.setText(viewModel.searchQuery.value)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.currency.collectLatest { currency ->
-                    transactionAdapter = TransactionAdapter(
-                        currency = currency,
-                        onItemClick = { txWithCat ->
-                            val bundle = bundleOf("transactionId" to txWithCat.transaction.id)
-                            findNavController().navigate(R.id.action_transactionListFragment_to_addEditTransactionFragment, bundle)
-                        },
-                        onDeleteClick = { txWithCat ->
-                            viewModel.deleteTransaction(txWithCat.transaction)
-                        }
-                    )
-                    binding.rvTransactions.layoutManager = LinearLayoutManager(requireContext())
-                    binding.rvTransactions.adapter = transactionAdapter
-
-                    launch {
-                        viewModel.transactions.collectLatest { pagingData ->
-                            transactionAdapter.submitData(pagingData)
-                        }
+                launch {
+                    viewModel.currency.collectLatest { currency ->
+                        transactionAdapter.updateCurrency(currency)
+                    }
+                }
+                launch {
+                    viewModel.transactions.collectLatest { pagingData ->
+                        transactionAdapter.submitData(pagingData)
                     }
                 }
             }
@@ -61,7 +95,10 @@ class TransactionListFragment : Fragment(R.layout.fragment_transaction_list) {
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                viewModel.setSearchQuery(s?.toString() ?: "")
+                val newQuery = s?.toString() ?: ""
+                if (newQuery != viewModel.searchQuery.value) {
+                    viewModel.setSearchQuery(newQuery)
+                }
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -76,6 +113,12 @@ class TransactionListFragment : Fragment(R.layout.fragment_transaction_list) {
         val typeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, types)
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerType.adapter = typeAdapter
+        val initialTypePos = when (viewModel.filterType.value) {
+            "INCOME" -> 1
+            "EXPENSE" -> 2
+            else -> 0
+        }
+        binding.spinnerType.setSelection(initialTypePos, false)
         binding.spinnerType.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val type = when (position) {
@@ -83,7 +126,9 @@ class TransactionListFragment : Fragment(R.layout.fragment_transaction_list) {
                     2 -> "EXPENSE"
                     else -> ""
                 }
-                viewModel.setFilterType(type)
+                if (type != viewModel.filterType.value) {
+                    viewModel.setFilterType(type)
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -92,6 +137,13 @@ class TransactionListFragment : Fragment(R.layout.fragment_transaction_list) {
         val sortAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sorts)
         sortAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerSort.adapter = sortAdapter
+        val initialSortPos = when (viewModel.sortOrder.value) {
+            "DATE_ASC" -> 1
+            "AMOUNT_DESC" -> 2
+            "AMOUNT_ASC" -> 3
+            else -> 0
+        }
+        binding.spinnerSort.setSelection(initialSortPos, false)
         binding.spinnerSort.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val sort = when (position) {
@@ -100,7 +152,9 @@ class TransactionListFragment : Fragment(R.layout.fragment_transaction_list) {
                     3 -> "AMOUNT_ASC"
                     else -> "DATE_DESC"
                 }
-                viewModel.setSortOrder(sort)
+                if (sort != viewModel.sortOrder.value) {
+                    viewModel.setSortOrder(sort)
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -115,10 +169,19 @@ class TransactionListFragment : Fragment(R.layout.fragment_transaction_list) {
                     val catAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, catNames)
                     catAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     binding.spinnerCategory.adapter = catAdapter
+
+                    val savedCatIndex = catList.indexOfFirst { it.id == viewModel.filterCategoryId.value }
+                        .takeIf { it >= 0 } ?: 0
+                    binding.spinnerCategory.setSelection(savedCatIndex, false)
+
                     binding.spinnerCategory.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                         override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                            val selectedCat = catList[position]
-                            viewModel.setFilterCategory(selectedCat.id)
+                            if (position in catList.indices) {
+                                val selectedCat = catList[position]
+                                if (selectedCat.id != viewModel.filterCategoryId.value) {
+                                    viewModel.setFilterCategory(selectedCat.id)
+                                }
+                            }
                         }
                         override fun onNothingSelected(parent: AdapterView<*>) {}
                     }

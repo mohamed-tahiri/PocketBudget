@@ -1,5 +1,6 @@
 package com.example.pocketbudget.data.repository
 
+import android.util.Log
 import com.example.pocketbudget.data.local.dao.BudgetDao
 import com.example.pocketbudget.data.local.dao.CategoryDao
 import com.example.pocketbudget.data.local.dao.TransactionDao
@@ -17,13 +18,16 @@ class BudgetRepository(
     fun getBudgetsWithSpentForMonth(monthYear: String): Flow<List<BudgetWithCategoryAndSpent>> {
         val budgetsFlow = budgetDao.getBudgetsForMonth(monthYear)
         val categoriesFlow = categoryDao.getAllCategories()
+        val spentTotalsFlow = transactionDao.getCategoryExpenseTotalsFlow()
 
-        return combine(budgetsFlow, categoriesFlow) { budgets, categories ->
+        return combine(budgetsFlow, categoriesFlow, spentTotalsFlow) { budgets, categories, spentTotals ->
             val categoryMap = categories.associateBy { it.id }
-            budgets.mapNotNull { budget ->
+            val spentMap = spentTotals.associateBy({ it.categoryId }, { it.totalSpent })
+
+            val result = budgets.mapNotNull { budget ->
                 val category = categoryMap[budget.categoryId]
                 if (category != null) {
-                    val spent = transactionDao.getTotalSpentForCategory(category.id) ?: 0.0
+                    val spent = spentMap[category.id] ?: 0.0
                     BudgetWithCategoryAndSpent(
                         budget = budget,
                         category = category,
@@ -31,7 +35,13 @@ class BudgetRepository(
                     )
                 } else null
             }
+            Log.d(TAG, "Recalculated ${result.size} budgets for $monthYear")
+            result
         }
+    }
+
+    suspend fun getBudgetForCategoryAndMonth(categoryId: Long, monthYear: String): BudgetEntity? {
+        return budgetDao.getBudgetForCategoryAndMonth(categoryId, monthYear)
     }
 
     suspend fun insertBudget(budget: BudgetEntity): Long {
@@ -48,5 +58,9 @@ class BudgetRepository(
 
     suspend fun getBudgetById(id: Long): BudgetEntity? {
         return budgetDao.getBudgetById(id)
+    }
+
+    companion object {
+        private const val TAG = "BudgetRepository"
     }
 }

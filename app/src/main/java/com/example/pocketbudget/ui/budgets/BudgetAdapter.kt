@@ -2,6 +2,7 @@ package com.example.pocketbudget.ui.budgets
 
 import android.graphics.Color
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -12,11 +13,20 @@ import com.example.pocketbudget.util.BudgetAlertCalculator
 import com.example.pocketbudget.util.CurrencyFormatter
 
 class BudgetAdapter(
-    private val currency: String,
-    private val alertThreshold: Int,
+    private var currency: String,
+    private var alertThreshold: Int,
+    private val showActions: Boolean = true,
     private val onEditClick: (BudgetWithCategoryAndSpent) -> Unit,
     private val onDeleteClick: (BudgetWithCategoryAndSpent) -> Unit
 ) : ListAdapter<BudgetWithCategoryAndSpent, BudgetAdapter.BudgetViewHolder>(DIFF_CALLBACK) {
+
+    fun updatePreferences(newCurrency: String, newThreshold: Int) {
+        if (currency != newCurrency || alertThreshold != newThreshold) {
+            currency = newCurrency
+            alertThreshold = newThreshold
+            notifyDataSetChanged()
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BudgetViewHolder {
         val binding = ItemBudgetBinding.inflate(
@@ -28,7 +38,7 @@ class BudgetAdapter(
     }
 
     override fun onBindViewHolder(holder: BudgetViewHolder, position: Int) {
-        holder.bind(getItem(position), currency, alertThreshold, onEditClick, onDeleteClick)
+        holder.bind(getItem(position), currency, alertThreshold, showActions, onEditClick, onDeleteClick)
     }
 
     class BudgetViewHolder(private val binding: ItemBudgetBinding) :
@@ -38,6 +48,7 @@ class BudgetAdapter(
             item: BudgetWithCategoryAndSpent,
             currency: String,
             alertThreshold: Int,
+            showActions: Boolean,
             onEditClick: (BudgetWithCategoryAndSpent) -> Unit,
             onDeleteClick: (BudgetWithCategoryAndSpent) -> Unit
         ) {
@@ -53,17 +64,20 @@ class BudgetAdapter(
                 binding.progressBar.setIndicatorColor(Color.parseColor("#E53935"))
                 binding.tvAlertBadge.text = "Dépassé ! (${alertStatus.percentage}%)"
                 binding.tvAlertBadge.setTextColor(Color.parseColor("#E53935"))
-                binding.tvAlertBadge.visibility = android.view.View.VISIBLE
+                binding.tvAlertBadge.visibility = View.VISIBLE
             } else if (alertStatus.isWarning) {
                 binding.progressBar.setIndicatorColor(Color.parseColor("#FB8C00"))
                 binding.tvAlertBadge.text = "Attention (${alertStatus.percentage}%)"
                 binding.tvAlertBadge.setTextColor(Color.parseColor("#FB8C00"))
-                binding.tvAlertBadge.visibility = android.view.View.VISIBLE
+                binding.tvAlertBadge.visibility = View.VISIBLE
             } else {
                 binding.progressBar.setIndicatorColor(Color.parseColor("#43A047"))
-                binding.tvAlertBadge.visibility = android.view.View.GONE
+                binding.tvAlertBadge.visibility = View.GONE
             }
 
+            val actionVisibility = if (showActions) View.VISIBLE else View.GONE
+            binding.btnEdit.visibility = actionVisibility
+            binding.btnDelete.visibility = actionVisibility
             binding.btnEdit.setOnClickListener { onEditClick(item) }
             binding.btnDelete.setOnClickListener { onDeleteClick(item) }
         }

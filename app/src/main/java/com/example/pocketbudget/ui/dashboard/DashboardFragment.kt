@@ -23,9 +23,21 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var alertAdapter: BudgetAdapter
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDashboardBinding.bind(view)
+
+        alertAdapter = BudgetAdapter(
+            currency = "€",
+            alertThreshold = 80,
+            showActions = false,
+            onEditClick = { _ -> },
+            onDeleteClick = { _ -> }
+        )
+        binding.rvAlerts.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvAlerts.adapter = alertAdapter
 
         binding.btnAddTransaction.setOnClickListener {
             findNavController().navigate(R.id.action_dashboardFragment_to_addEditTransactionFragment)
@@ -39,25 +51,21 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collectLatest { state ->
+                    binding.tvUserName.text = state.userName
+                    binding.tvUserEmail.text = state.userEmail
                     binding.tvBalance.text = CurrencyFormatter.format(state.balance, state.currency)
                     binding.tvTotalIncome.text = CurrencyFormatter.format(state.totalIncome, state.currency)
                     binding.tvTotalExpense.text = CurrencyFormatter.format(state.totalExpense, state.currency)
 
+                    alertAdapter.updatePreferences(state.currency, state.alertThreshold)
                     if (state.warningBudgets.isNotEmpty()) {
                         binding.tvNoAlerts.visibility = View.GONE
                         binding.rvAlerts.visibility = View.VISIBLE
-                        val adapter = BudgetAdapter(
-                            currency = state.currency,
-                            alertThreshold = state.alertThreshold,
-                            onEditClick = { _ -> },
-                            onDeleteClick = { }
-                        )
-                        binding.rvAlerts.layoutManager = LinearLayoutManager(requireContext())
-                        binding.rvAlerts.adapter = adapter
-                        adapter.submitList(state.warningBudgets)
+                        alertAdapter.submitList(state.warningBudgets)
                     } else {
                         binding.tvNoAlerts.visibility = View.VISIBLE
                         binding.rvAlerts.visibility = View.GONE
+                        alertAdapter.submitList(emptyList())
                     }
                 }
             }

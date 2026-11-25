@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pocketbudget.data.local.PocketBudgetDatabase
 import com.example.pocketbudget.data.local.entity.CategoryEntity
 import com.example.pocketbudget.data.repository.CategoryRepository
+import com.example.pocketbudget.util.InputValidator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -19,7 +20,9 @@ class CategoryListViewModel(application: Application) : AndroidViewModel(applica
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun saveCategory(id: Long, name: String, type: String, iconName: String, colorHex: String) {
-        if (name.isBlank()) return
+        val check = InputValidator.validateCategory(name, type, colorHex)
+        if (!check.isValid) return
+
         viewModelScope.launch {
             if (id == 0L) {
                 categoryRepository.insertCategory(
@@ -27,7 +30,7 @@ class CategoryListViewModel(application: Application) : AndroidViewModel(applica
                         name = name.trim(),
                         type = type,
                         iconName = iconName,
-                        colorHex = colorHex
+                        colorHex = colorHex.trim()
                     )
                 )
             } else {
@@ -38,7 +41,7 @@ class CategoryListViewModel(application: Application) : AndroidViewModel(applica
                             name = name.trim(),
                             type = type,
                             iconName = iconName,
-                            colorHex = colorHex
+                            colorHex = colorHex.trim()
                         )
                     )
                 }
