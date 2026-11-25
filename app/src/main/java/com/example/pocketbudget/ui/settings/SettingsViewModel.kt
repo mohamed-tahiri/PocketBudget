@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pocketbudget.data.datastore.UserPreferencesManager
+import com.example.pocketbudget.util.InputValidator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
+    val isLoaded: Boolean = false,
     val currency: String = "€",
     val budgetAlertThreshold: Int = 80,
     val themeMode: String = "SYSTEM",
@@ -29,6 +31,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         preferencesManager.userEmailFlow
     ) { currency, threshold, theme, name, email ->
         SettingsUiState(
+            isLoaded = true,
             currency = currency,
             budgetAlertThreshold = threshold,
             themeMode = theme,
@@ -60,9 +63,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateProfile(name: String, email: String) {
+        val check = InputValidator.validateProfile(name, email)
+        if (!check.isValid) return
         viewModelScope.launch {
-            if (name.isNotBlank()) preferencesManager.updateUserName(name.trim())
-            if (email.isNotBlank()) preferencesManager.updateUserEmail(email.trim())
+            preferencesManager.updateUserName(name.trim())
+            preferencesManager.updateUserEmail(email.trim())
         }
     }
 }

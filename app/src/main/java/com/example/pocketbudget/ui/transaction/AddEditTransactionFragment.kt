@@ -24,17 +24,25 @@ class AddEditTransactionFragment : Fragment(R.layout.fragment_add_edit_transacti
 
     private var categoriesList: List<CategoryEntity> = emptyList()
     private var currentTransactionId: Long = 0L
+    private var pendingCategoryId: Long? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentAddEditTransactionBinding.bind(view)
 
         currentTransactionId = arguments?.getLong("transactionId", 0L) ?: 0L
+        pendingCategoryId = savedInstanceState?.getLong(KEY_SELECTED_CATEGORY_ID, -1L)?.takeIf { it > 0L }
 
-        if (currentTransactionId != 0L) {
+        binding.tvTitleHeader.text = if (currentTransactionId == 0L) {
+            "Ajouter une Transaction"
+        } else {
+            "Modifier la Transaction"
+        }
+
+        if (currentTransactionId != 0L && savedInstanceState == null) {
             viewLifecycleOwner.lifecycleScope.launch {
                 val tx = viewModel.getTransactionById(currentTransactionId)
-                if (tx != null) {
+                if (tx != null && _binding != null) {
                     binding.etTitle.setText(tx.title)
                     binding.etAmount.setText(tx.amount.toString())
                     if (tx.type == "INCOME") {
@@ -42,6 +50,8 @@ class AddEditTransactionFragment : Fragment(R.layout.fragment_add_edit_transacti
                     } else {
                         binding.rbExpense.isChecked = true
                     }
+                    pendingCategoryId = tx.categoryId
+                    selectCategoryIfPresent(tx.categoryId)
                 }
             }
         }
@@ -54,18 +64,22 @@ class AddEditTransactionFragment : Fragment(R.layout.fragment_add_edit_transacti
                     val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     binding.spinnerCategory.adapter = adapter
+                    pendingCategoryId?.let { selectCategoryIfPresent(it) }
                 }
             }
         }
 
         binding.btnSave.setOnClickListener {
+            binding.tilTitle.error = null
+            binding.tilAmount.error = null
+
             val title = binding.etTitle.text.toString()
             val amountStr = binding.etAmount.text.toString()
-            val amount = amountStr.toDoubleOrNull() ?: 0.0
+            val amount = amountStr.toDoubleOrNull()
             val type = if (binding.rbIncome.isChecked) "INCOME" else "EXPENSE"
 
             val selectedPosition = binding.spinnerCategory.selectedItemPosition
-            val categoryId = if (selectedPosition >= 0 && selectedPosition < categoriesList.size) {
+            val categoryId = if (selectedPosition in categoriesList.indices) {
                 categoriesList[selectedPosition].id
             } else -1L
 
@@ -81,14 +95,39 @@ class AddEditTransactionFragment : Fragment(R.layout.fragment_add_edit_transacti
                     findNavController().popBackStack()
                 },
                 onError = { errorMsg ->
-                    Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+                    when {
+                        title.isBlank() -> binding.tilTitle.error = errorMsg
+                        amount == null || amount <= 0.0 -> binding.tilAmount.error = errorMsg
+                        else -> Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
+        }
+    }
+
+    private fun selectCategoryIfPresent(categoryId: Long) {
+        val index = categoriesList.indexOfFirst { it.id == categoryId }
+        if (index >= 0) {
+            binding.spinnerCategory.setSelection(index)
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val selectedPosition = _binding?.spinnerCategory?.selectedItemPosition ?: -1
+        if (selectedPosition in categoriesList.indices) {
+            outState.putLong(KEY_SELECTED_CATEGORY_ID, categoriesList[selectedPosition].id)
+        } else {
+            pendingCategoryId?.let { outState.putLong(KEY_SELECTED_CATEGORY_ID, it) }
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        private const val KEY_SELECTED_CATEGORY_ID = "selected_category_id"
     }
 }

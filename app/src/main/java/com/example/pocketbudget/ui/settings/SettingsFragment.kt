@@ -5,7 +5,6 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -13,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.pocketbudget.R
 import com.example.pocketbudget.databinding.FragmentSettingsBinding
+import com.example.pocketbudget.util.InputValidator
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -21,60 +21,78 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val viewModel: SettingsViewModel by viewModels()
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
-    private var isInitialSetup = true
+
+    private var hasLoadedState = false
+    private var hasPopulatedProfile = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentSettingsBinding.bind(view)
 
+        hasLoadedState = false
+        hasPopulatedProfile = savedInstanceState != null
+
         setupSpinners()
 
         binding.btnSaveProfile.setOnClickListener {
+            binding.tilUserName.error = null
+            binding.tilUserEmail.error = null
+
             val name = binding.etUserName.text.toString()
             val email = binding.etUserEmail.text.toString()
-            viewModel.updateProfile(name, email)
-            Toast.makeText(requireContext(), "Profil enregistré avec succès", Toast.LENGTH_SHORT).show()
+            val check = InputValidator.validateProfile(name, email)
+            if (!check.isValid) {
+                if (name.isBlank()) {
+                    binding.tilUserName.error = check.errorMessage
+                } else {
+                    binding.tilUserEmail.error = check.errorMessage
+                }
+            } else {
+                viewModel.updateProfile(name, email)
+                Toast.makeText(requireContext(), "Profil enregistré avec succès", Toast.LENGTH_SHORT).show()
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collectLatest { state ->
-                    isInitialSetup = true
-                    if (binding.etUserName.text.toString().isBlank() && state.userName.isNotBlank()) {
+                    if (!state.isLoaded) return@collectLatest
+
+                    if (!hasPopulatedProfile) {
                         binding.etUserName.setText(state.userName)
-                    }
-                    if (binding.etUserEmail.text.toString().isBlank() && state.userEmail.isNotBlank()) {
                         binding.etUserEmail.setText(state.userEmail)
+                        hasPopulatedProfile = true
                     }
 
-                    when (state.currency) {
-                        "€" -> binding.spinnerCurrency.setSelection(0)
-                        "$" -> binding.spinnerCurrency.setSelection(1)
-                        "£" -> binding.spinnerCurrency.setSelection(2)
-                        "CHF" -> binding.spinnerCurrency.setSelection(3)
+                    val currencyPos = when (state.currency) {
+                        "$" -> 1
+                        "£" -> 2
+                        "CHF" -> 3
+                        else -> 0
+                    }
+                    if (binding.spinnerCurrency.selectedItemPosition != currencyPos) {
+                        binding.spinnerCurrency.setSelection(currencyPos, false)
                     }
 
-                    when (state.budgetAlertThreshold) {
-                        80 -> binding.spinnerThreshold.setSelection(0)
-                        90 -> binding.spinnerThreshold.setSelection(1)
-                        100 -> binding.spinnerThreshold.setSelection(2)
+                    val thresholdPos = when (state.budgetAlertThreshold) {
+                        90 -> 1
+                        100 -> 2
+                        else -> 0
+                    }
+                    if (binding.spinnerThreshold.selectedItemPosition != thresholdPos) {
+                        binding.spinnerThreshold.setSelection(thresholdPos, false)
                     }
 
-                    when (state.themeMode) {
-                        "SYSTEM" -> {
-                            binding.spinnerTheme.setSelection(0)
-                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                        }
-                        "LIGHT" -> {
-                            binding.spinnerTheme.setSelection(1)
-                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                        }
-                        "DARK" -> {
-                            binding.spinnerTheme.setSelection(2)
-                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                        }
+                    val themePos = when (state.themeMode) {
+                        "LIGHT" -> 1
+                        "DARK" -> 2
+                        else -> 0
                     }
-                    isInitialSetup = false
+                    if (binding.spinnerTheme.selectedItemPosition != themePos) {
+                        binding.spinnerTheme.setSelection(themePos, false)
+                    }
+
+                    hasLoadedState = true
                 }
             }
         }
@@ -87,14 +105,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         binding.spinnerCurrency.adapter = currencyAdapter
         binding.spinnerCurrency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (isInitialSetup) return
+                if (!hasLoadedState) return
                 val curr = when (position) {
                     1 -> "$"
                     2 -> "£"
                     3 -> "CHF"
                     else -> "€"
                 }
-                viewModel.updateCurrency(curr)
+                if (curr != viewModel.uiState.value.currency) {
+                    viewModel.updateCurrency(curr)
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -105,13 +125,15 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         binding.spinnerThreshold.adapter = thresholdAdapter
         binding.spinnerThreshold.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (isInitialSetup) return
+                if (!hasLoadedState) return
                 val thresh = when (position) {
                     1 -> 90
                     2 -> 100
                     else -> 80
                 }
-                viewModel.updateBudgetAlertThreshold(thresh)
+                if (thresh != viewModel.uiState.value.budgetAlertThreshold) {
+                    viewModel.updateBudgetAlertThreshold(thresh)
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -122,13 +144,15 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         binding.spinnerTheme.adapter = themeAdapter
         binding.spinnerTheme.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (isInitialSetup) return
+                if (!hasLoadedState) return
                 val theme = when (position) {
                     1 -> "LIGHT"
                     2 -> "DARK"
                     else -> "SYSTEM"
                 }
-                viewModel.updateThemeMode(theme)
+                if (theme != viewModel.uiState.value.themeMode) {
+                    viewModel.updateThemeMode(theme)
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }

@@ -10,6 +10,7 @@ import com.example.pocketbudget.data.local.entity.CategoryEntity
 import com.example.pocketbudget.data.local.relation.BudgetWithCategoryAndSpent
 import com.example.pocketbudget.data.repository.BudgetRepository
 import com.example.pocketbudget.data.repository.CategoryRepository
+import com.example.pocketbudget.util.InputValidator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -48,8 +49,11 @@ class BudgetListViewModel(application: Application) : AndroidViewModel(applicati
     )
 
     fun saveBudget(categoryId: Long, monthlyLimit: Double, monthYear: String = "2025-05") {
+        val check = InputValidator.validateBudget(categoryId, monthlyLimit, monthYear)
+        if (!check.isValid) return
+
         viewModelScope.launch {
-            val existing = database.budgetDao().getBudgetForCategoryAndMonth(categoryId, monthYear)
+            val existing = budgetRepository.getBudgetForCategoryAndMonth(categoryId, monthYear)
             if (existing != null) {
                 budgetRepository.updateBudget(existing.copy(monthlyLimit = monthlyLimit))
             } else {

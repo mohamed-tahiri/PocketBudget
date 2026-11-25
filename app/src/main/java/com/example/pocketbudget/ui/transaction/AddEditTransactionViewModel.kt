@@ -1,6 +1,7 @@
 package com.example.pocketbudget.ui.transaction
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pocketbudget.data.local.PocketBudgetDatabase
@@ -8,6 +9,7 @@ import com.example.pocketbudget.data.local.entity.CategoryEntity
 import com.example.pocketbudget.data.local.entity.TransactionEntity
 import com.example.pocketbudget.data.repository.CategoryRepository
 import com.example.pocketbudget.data.repository.TransactionRepository
+import com.example.pocketbudget.util.InputValidator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -18,60 +20,69 @@ class AddEditTransactionViewModel(application: Application) : AndroidViewModel(a
     private val transactionRepository = TransactionRepository(database.transactionDao())
     private val categoryRepository = CategoryRepository(database.categoryDao())
 
+    var loadedTransaction: TransactionEntity? = null
+        private set
+
     val categories: StateFlow<List<CategoryEntity>> = categoryRepository.allCategories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     suspend fun getTransactionById(id: Long): TransactionEntity? {
-        return transactionRepository.getTransactionById(id)
+        if (loadedTransaction?.id == id) return loadedTransaction
+        return transactionRepository.getTransactionById(id)?.also {
+            loadedTransaction = it
+        }
     }
 
     fun saveTransaction(
         id: Long,
         title: String,
-        amount: Double,
+        amount: Double?,
         type: String,
         categoryId: Long,
         date: Long,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        if (title.isBlank()) {
-            onError("Le titre ne peut pas être vide")
-            return
-        }
-        if (amount <= 0.0) {
-            onError("Le montant doit être supérieur à 0")
-            return
-        }
-        if (categoryId <= 0) {
-            onError("Veuillez sélectionner une catégorie")
+        val check = InputValidator.validateTransaction(title, amount, type, categoryId)
+        if (!check.isValid) {
+            onError(check.errorMessage ?: "Données invalides")
             return
         }
 
+        val validAmount = amount!!
         viewModelScope.launch {
             if (id == 0L) {
                 val newTx = TransactionEntity(
                     title = title.trim(),
-                    amount = amount,
+                    amount = validAmount,
                     type = type,
                     categoryId = categoryId,
                     date = date
                 )
-                transactionRepository.insertTransaction(newTx)
+                val insertedId = transactionRepository.insertTransaction(newTx)
+                Log.d(TAG, "Inserted transaction id=$insertedId, amount=$validAmount, categoryId=$categoryId")
             } else {
                 val existing = transactionRepository.getTransactionById(id)
                 if (existing != null) {
                     val updated = existing.copy(
                         title = title.trim(),
-                        amount = amount,
+                        amount = validAmount,
                         type = type,
                         categoryId = categoryId,
-                        date = date
+                        date = existing.date
                     )
                     transactionRepository.updateTransaction(updated)
+                    Log.d(TAG, "Updated transaction id=$id, amount=$validAmount, categoryId=$categoryId")
+                } else {
+                    onError("Transaction introuvable")
+                    return@launch
                 }
             }
             onSuccess()
         }
+    }
+
+    companion object {
+        private const val TAG = "AddEditTransactionVM"
     }
 }

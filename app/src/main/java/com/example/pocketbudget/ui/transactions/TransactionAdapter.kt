@@ -14,10 +14,17 @@ import java.util.Date
 import java.util.Locale
 
 class TransactionAdapter(
-    private val currency: String,
+    private var currency: String,
     private val onItemClick: (TransactionWithCategory) -> Unit,
     private val onDeleteClick: (TransactionWithCategory) -> Unit
 ) : PagingDataAdapter<TransactionWithCategory, TransactionAdapter.TransactionViewHolder>(DIFF_CALLBACK) {
+
+    fun updateCurrency(newCurrency: String) {
+        if (currency != newCurrency) {
+            currency = newCurrency
+            notifyDataSetChanged()
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransactionViewHolder {
         val binding = ItemTransactionBinding.inflate(
