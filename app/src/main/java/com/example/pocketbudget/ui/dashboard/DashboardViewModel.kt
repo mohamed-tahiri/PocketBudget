@@ -8,7 +8,7 @@ import com.example.pocketbudget.data.local.PocketBudgetDatabase
 import com.example.pocketbudget.data.local.relation.BudgetWithCategoryAndSpent
 import com.example.pocketbudget.data.repository.BudgetRepository
 import com.example.pocketbudget.data.repository.TransactionRepository
-import com.example.pocketbudget.util.BudgetAlertCalculator
+import com.example.pocketbudget.domain.usecase.GetDashboardSummaryUseCase
 import com.example.pocketbudget.util.AppConstants
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +31,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val transactionRepository = TransactionRepository(database.transactionDao())
     private val budgetRepository = BudgetRepository(database.budgetDao(), database.transactionDao(), database.categoryDao())
     private val preferencesManager = UserPreferencesManager(application)
+    private val getDashboardSummary = GetDashboardSummaryUseCase()
 
     val uiState: StateFlow<DashboardUiState> = combine(
         combine(
@@ -58,25 +59,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val userEmail = p2.second
         val budgets = p2.third
 
-        val totalInc = income ?: 0.0
-        val totalExp = expense ?: 0.0
-        val balance = totalInc - totalExp
-
-        val warningList = budgets.filter { budget ->
-            BudgetAlertCalculator.calculate(
-                budget.spentAmount,
-                budget.budget.monthlyLimit,
-                threshold
-            ).isWarning
-        }
+        val summary = getDashboardSummary(
+            income,
+            expense,
+            budgets,
+            threshold
+        )
 
         DashboardUiState(
-            totalIncome = totalInc,
-            totalExpense = totalExp,
-            balance = balance,
+            totalIncome = summary.totalIncome,
+            totalExpense = summary.totalExpense,
+            balance = summary.balance,
             currency = currency,
             alertThreshold = threshold,
-            warningBudgets = warningList,
+            warningBudgets = summary.warningBudgets,
             userName = userName,
             userEmail = userEmail
         )

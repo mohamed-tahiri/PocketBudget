@@ -58,7 +58,7 @@ class AddEditTransactionViewModel(application: Application) : AndroidViewModel(a
                     amount = validAmount,
                     type = type,
                     categoryId = categoryId,
-                    date = existing.date
+                    date = date
                 )
                 val insertedId = transactionRepository.insertTransaction(newTx)
                 Log.d(TAG, "Inserted transaction id=$insertedId, amount=$validAmount, categoryId=$categoryId")
